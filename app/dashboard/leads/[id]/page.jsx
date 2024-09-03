@@ -5,7 +5,7 @@ import { db } from "@/configs"; // Ensure you have this correctly set up
 import { LeadsList } from "@/configs/schema";
 import { eq } from "drizzle-orm";
 import LeadDetailsModal from "../_components/LeadDetailsModal";
-
+//leads page
 const LeadDetailPage = () => {
   const { id } = useParams();
   const [lead, setLead] = useState(null);
