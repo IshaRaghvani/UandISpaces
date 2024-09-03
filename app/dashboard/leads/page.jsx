@@ -17,13 +17,16 @@ function LeadsPage() {
   const [hotLeads, setHotLeads] = useState([]);
   const [closedLeads, setclosedLeads] = useState([]);
   const [csvData, setCsvData] = useState([]);
-  const [selectedLeads, setSelectedLeads] = useState([]);
+  const [selectedLead, setSelectedLead] = useState([]);
   const [activeTab, setActiveTab] = useState("manageLeads");
+  // const [isModalOpen, setIsModalOpen] = useState(false);
+
+ 
 
   useEffect(() => {
     GetAllList();
   }, []);
-
+//get all leads
   const GetAllList = async () => {
     try {
       const res = await db.select().from(LeadsList).orderBy(desc(LeadsList.id));
@@ -34,11 +37,12 @@ function LeadsPage() {
       console.error("Error fetching leads:", error);
     }
   };
-
+//filter hot leads
   const filterHotLeads = (leads) => {
     const hotLeadsFiltered = leads.filter((lead) => lead.status === "Hot");
     setHotLeads(hotLeadsFiltered);
   };
+  //filter closed leads
   const filterclosedLeads = (leads) => {
     const closedLeadsFiltered = leads.filter(
       (lead) => lead.status === "Close and Win"
@@ -157,7 +161,7 @@ function LeadsPage() {
             />
             <LeadsListTable
               leadsList={leadsList}
-              setSelectedLeads={setSelectedLeads}
+              
             />
           </div>
         </TabsContent>
@@ -169,7 +173,7 @@ function LeadsPage() {
           />
           <LeadsListTable
             leadsList={hotLeads}
-            setSelectedLeads={setSelectedLeads}
+            
           />
         </TabsContent>
 
@@ -180,7 +184,7 @@ function LeadsPage() {
           />
           <LeadsListTable
             leadsList={closedLeads}
-            setSelectedLeads={setSelectedLeads}
+            
           />
         </TabsContent>
       </Tabs>
