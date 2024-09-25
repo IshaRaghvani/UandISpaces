@@ -1,5 +1,4 @@
 import React, { useState } from "react";
-import Papa from "papaparse";
 import {
   Dialog,
   DialogContent,
@@ -10,50 +9,64 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/components/ui/use-toast";
-import { Toaster } from "@/components/ui/toaster"
 import { LoaderIcon } from "lucide-react";
-function UploadLeadsCsv({ onUpload }) {
+
+function UploadLeadsCsv({ onUploadSuccess }) {
   const [csvFile, setCsvFile] = useState(null);
   const [loading, setLoading] = useState(false);
-  const { toast } = useToast(); // Initialize the toast hook
-  const [open, setOpen] = useState(false); // For controlling the dialog
+  const { toast } = useToast();
+  const [open, setOpen] = useState(false);
 
   const handleFileChange = (e) => {
     setCsvFile(e.target.files[0]);
   };
-  
 
-  const handleUpload = () => {
+  const handleUpload = async (e) => {
+    e.preventDefault();
     if (!csvFile) return;
     setLoading(true);
 
-    Papa.parse(csvFile, {
-      header: true,
-      complete: function (results) {
-        console.log(results.data);
-        // Call the onUpload function passed from the parent component
-        onUpload(results.data);
-        // Show success toast
-        toast({
-          title: "New Lead Added",
-          description: `Lead has been successfully added.`,
-        });
+    const formData = new FormData();
+    formData.append('file', csvFile);
 
-        setLoading(false); // Set loading to false after upload
-        setOpen(false); // Close the dialog
-      },
-      error: function (error) {
-        console.error("Error parsing CSV:", error);
-      },
-    });
+    try {
+      const response = await fetch("/api/leads/upload", {
+        method: "POST",
+        body: formData,
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to upload CSV data");
+      }
+
+      const result = await response.json();
+      toast({
+        title: "New Leads Added",
+        description: `${result.updatedLeads.length} leads have been successfully added.`,
+      });
+      // Call the function to refetch leads
+      if (onUploadSuccess) {
+        onUploadSuccess();
+      }
+
+    } catch (error) {
+      console.error("Error uploading CSV data:", error);
+      toast({
+        title: "Upload Failed",
+        description: error.message,
+      });
+    } finally {
+      setLoading(false);
+      setOpen(false);
+    }
   };
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger>
-        <Button className="bg-blue-500 text-white px-4 py-2 rounded">
+        <span className="bg-blue-500 font-medium text-white px-4 py-2 rounded">
           Upload CSV
-        </Button>
+        </span>
       </DialogTrigger>
       <DialogContent>
         <DialogHeader>
@@ -69,11 +82,7 @@ function UploadLeadsCsv({ onUpload }) {
             className="bg-green-500 text-white px-4 py-2 rounded mt-2"
             disabled={loading}
           >
-             {loading ? (
-              <LoaderIcon className="animate-spin" />
-            ) : (
-              "Upload"
-            )}
+            {loading ? <LoaderIcon className="animate-spin" /> : "Upload"}
           </Button>
         </div>
       </DialogContent>

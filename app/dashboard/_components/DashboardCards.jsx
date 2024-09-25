@@ -1,83 +1,93 @@
 import React from "react";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardFooter,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import DonutChart from "./DonutChart"
 
-function DashboardCards({ totalLeads, hotLeads , todaysLeads}) {
+function DashboardCards({
+  totalLeads,
+  hotLeads,
+  todaysLeads,
+  followUpStatusData,
+}) {
+  const cards = [
+    {
+      title: "TOTAL LEADS",
+      value: totalLeads,
+      color: "text-blue-600",
+    },
+    {
+      title: "HOT LEADS",
+      value: hotLeads,
+      color: "text-red-600",
+    },
+    {
+      title: "TODAY'S FOLLOWUPS",
+      value: todaysLeads,
+      color: "text-green-600",
+    },
+    {
+      title: "NEW LEADS",
+      value: 15,
+      color: "text-purple-600",
+    },
+  ];
+
   return (
-    <div className="flex gap-4">
-    {/* <Card className="w-[350px]">
-      <CardHeader>
-        <CardTitle>Create project</CardTitle>
-        <CardDescription>Deploy your new project in one-click.</CardDescription>
-      </CardHeader>
-      <CardContent>
-        <form>
-          <div className="grid w-full items-center gap-4">
-            <div className="flex flex-col space-y-1.5">
-              <Label htmlFor="name">Name</Label>
-              <Input id="name" placeholder="Name of your project" />
-            </div>
-            
-          </div>
-        </form>
-      </CardContent>
-      <CardFooter className="flex justify-between">
-        <Button variant="outline">Cancel</Button>
-        <Button>Deploy</Button>
-      </CardFooter>
-    </Card> */}
-    {/* total leads */}
-    <Card className="w-[250px] bg-opacity-40 bg-purple-300 text-bold text-purple-700 ">
-      <CardHeader>
-        <CardTitle>Total Leads</CardTitle>
-        <CardDescription>Total Leads for this month</CardDescription>
-      </CardHeader>
-      <CardContent>
-      <CardTitle>{totalLeads}</CardTitle>
-        
-      </CardContent>
-      
-    </Card>
-     {/* Hot leads */}
-    <Card className="w-[250px] bg-opacity-40 bg-rose-300 text-bold text-rose-700 ">
-      <CardHeader>
-        <CardTitle>Hot Leads</CardTitle>
-        <CardDescription>Hot Leads for this month</CardDescription>
-      </CardHeader>
-      <CardContent>
-      <CardTitle>{hotLeads}</CardTitle>
-        
-      </CardContent>
-      
-    </Card>
-    {/* Todays leads */}
-    <Card className="w-[250px] bg-opacity-40 bg-green-300 text-bold text-green-700 ">
-      <CardHeader>
-        <CardTitle>Today's Leads</CardTitle>
-        <CardDescription>Scheduled Leads for today</CardDescription>
-      </CardHeader>
-      <CardContent>
-      <CardTitle>{todaysLeads}</CardTitle>
-        
-      </CardContent>
-      
-    </Card>
+    <div className="flex flex-col p-4 gap-4">
+      {/* Top Section: Cards */}
+      <div className="flex flex-col lg:flex-row gap-8 mb-4">
+        {/* Left Side */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 gap-4 w-full lg:w-3/4">
+          {cards.map((card, index) => (
+            <Card
+              key={index}
+              className="bg-opacity-40 text-black border-gray-200 shadow-sm"
+              style={{ height: "170px" }}
+            >
+              <CardHeader>
+                <CardTitle className={`font-semibold text-md ${card.color}`}>
+                  {card.title}
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <CardTitle className="text-3xl">{card.value}</CardTitle>
+                <hr className="border-t border-gray-300 my-4" />
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+        {/* Right Side */}
+        <div className="flex flex-col lg:flex-row gap-4 w-full lg:w-[300]">
+          <Card className="flex-1 bg-opacity-40 text-black border-gray-200 shadow-sm">
+            <CardHeader>
+              <CardTitle className="font-semibold text-md">
+                Follow-Up Status
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="flex items-center justify-center h-full">
+              {/* <DonutChart data={followUpStatusData} /> */}
+            </CardContent>
+          </Card>
+          <Card className="flex-1 bg-opacity-40 text-black border-gray-200 shadow-sm">
+            <CardHeader>
+              <CardTitle className="font-semibold text-md">Graphs</CardTitle>
+            </CardHeader>
+            <CardContent className="flex items-center justify-center h-full">
+              {/* Add graph content here */}
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+      {/* Bottom Section: Graphs 2 */}
+      <div className="w-full">
+        {/* <Card className="w-full bg-opacity-40 text-black border-gray-200 shadow-sm">
+          <CardHeader>
+            <CardTitle className="font-semibold text-md">Graphs 2</CardTitle>
+          </CardHeader>
+          <CardContent className="flex items-center justify-center h-full">
+           
+          </CardContent>
+        </Card> */}
+      </div>
     </div>
   );
 }

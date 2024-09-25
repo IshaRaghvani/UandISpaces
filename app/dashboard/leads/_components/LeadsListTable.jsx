@@ -1,120 +1,70 @@
 // LeadsListTable.jsx
-"use client";
-import React, { useState, useMemo, useEffect } from "react";
+import React, { useMemo, useState, useEffect } from "react";
 import { AgGridReact } from "ag-grid-react";
 import "ag-grid-community/styles/ag-grid.css";
 import "ag-grid-community/styles/ag-theme-quartz.css";
-import { Search } from "lucide-react";
 import StatusTag from "./StatusTag";
 import FollowUpStatusTag from "./FollowUpStatusTag";
-import { useRouter } from "next/navigation"; // Import useRouter
-import Link from "next/link";
-import { db } from "@/configs";
-import { Modal } from "@mui/material";
-function LeadsListTable({ leadsList, setSelectedLeads,onRowClick }) {
-  const router = useRouter(); // Initialize useRouter
+import { Search } from "lucide-react";
+import { useRouter } from "next/navigation";
+import EditModal from "./EditModal";
+import LeadDetailsModal from "./LeadDetailsModal";
+
+const LeadsListTable = ({ data, onStatusUpdate, onFollowUpStatusUpdate }) => {
   const pagination = true;
   const paginationPageSize = 50;
   const paginationPageSizeSelector = [50, 100, 150];
   const [searchInput, setsearchInput] = useState("");
+  const router = useRouter();
   const [selectedRows, setSelectedRows] = useState([]);
-  const [rowData, setRowData] = useState([]);
-  const rowStyle = { background: "#f9f9f9" };
+  const [isModalVisible, setIsModalVisible] = useState(false);
   const [selectedLead, setSelectedLead] = useState(null);
-  const [isModalOpen, setIsModalOpen] = useState(false);
-
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [rowData, setRowData] = useState(data); 
+  const handleStatusChange = (leadId, newStatus) => {
+    // if (newStatus.toLowerCase() === "inactive") {
+    //   setSelectedLead(leadId);
+    //   setIsDialogOpen(true);
+    // } else {
+    //   onStatusUpdate(leadId, newStatus);
+    // }
+    console.log("clicl");
+  };
   useEffect(() => {
-    if (leadsList) {
-      setRowData(leadsList);
-    }
-  }, [leadsList]);
+    setRowData(data);
+}, [data]);
 
-  const updateLeadStatus = async (leadId, newStatus) => {
-    try {
-      if (!rowData || rowData.length === 0) {
-        console.error("Row data is not available");
-        return;
-      }
-      const leadToUpdate = rowData.find((lead) => lead.id === Number(leadId));
-
-      if (!leadToUpdate || leadToUpdate.status === undefined) {
-        console.error(
-          `Lead with ID ${leadId} not found or status is undefined`
-        );
-        return;
-      }
-
-      await db
-        .update(LeadsList)
-        .set({ status: newStatus })
-        .where({ id: leadId });
-
-      const updatedLeads = rowData.map((lead) =>
-        lead.id === leadId ? { ...lead, status: newStatus } : lead
-      );
-      setRowData(updatedLeads);
-    } catch (error) {
-      console.error("Error updating lead status:", error);
-    }
+  const handleLeadUpdate = (updatedLead) => {
+    setRowData((prevRowData) =>
+      prevRowData.map((lead) => (lead._id === updatedLead._id ? updatedLead : lead))
+    );
+    setSelectedLead(updatedLead); // Update the selected lead
   };
 
-  const handleRowClick = (params) => {
-    // Navigate to the detail page of the clicked lead
-    router.push(`/dashboard/leads/${params.data.id}`);
+  const confirmStatusChange = (followUpStatus) => {
+    onFollowUpStatusUpdate(selectedLead, followUpStatus);
+    setIsDialogOpen(false);
   };
 
-  // const handleRowClick = (params) => {
-  //   setSelectedLead(params.data);
-  //   setIsModalOpen(true);
-  //   // onRowClick(params.data); // Pass the lead data to the parent component
-  // };
-  
-  
+  const rowStyle = useMemo(() => ({ background: "#EEEEEE" }), []);
 
-  const closeModal = () => {
-    setIsModalOpen(false);
-    setSelectedLead(null); // Clear selected lead
+  const formatDate = (date) => {
+    if (!date) return "No Date"; 
+    return new Date(date).toLocaleDateString("en-GB", {
+      day: "2-digit",
+      month: "long",
+      year: "numeric",
+    });
   };
 
-  const filterParams = {
-    comparator: (filterLocalDateAtMidnight, cellValue) => {
-      const dateAsString = cellValue;
-      if (dateAsString == null) return -1;
-      const dateParts = dateAsString.split("/");
-      const cellDate = new Date(
-        Number(dateParts[2]),
-        Number(dateParts[1]) - 1,
-        Number(dateParts[0])
-      );
-      if (filterLocalDateAtMidnight.getTime() === cellDate.getTime()) {
-        return 0;
-      }
-      if (cellDate < filterLocalDateAtMidnight) {
-        return -1;
-      }
-      if (cellDate > filterLocalDateAtMidnight) {
-        return 1;
-      }
-      return 0;
-    },
-    minValidYear: 2010,
-    maxValidYear: 2070,
-    inRangeFloatingFilterDateFormat: "Do MMM YYYY",
-  };
-
-  const getRowStyle = (params) => {
-    if (params.node.rowIndex % 2 === 0) {
-      return { background: "white" };
-    }
-  };
-
-  const [colDefs, setColDefs] = useState([
+  const columnDefs = [
     {
       field: "select",
       flex: 1,
       headerCheckboxSelection: true,
       checkboxSelection: true,
       minWidth: 100,
+      headerCheckboxSelectionFilteredOnly: true,
     },
     {
       field: "name",
@@ -122,19 +72,30 @@ function LeadsListTable({ leadsList, setSelectedLeads,onRowClick }) {
       filter: true,
       editable: true,
       minWidth: 150,
-      // cellRenderer: (params) => (
-      //   <Link href={`/dashboard/leads/${params.data.id}`} passHref>
-      //     {params.value}
-      //   </Link>
-      // ),
     },
     {
       field: "status",
       cellRenderer: (params) => (
         <StatusTag
           value={params.value}
-          leadId={params.data.id}
-          onUpdateStatus={updateLeadStatus}
+          leadId={params.data._id}
+          onUpdateStatus={onStatusUpdate}
+          onStatusChange={(newStatus) =>
+            handleStatusChange(params.data._id, newStatus)
+          }
+        />
+      ),
+    },
+    {
+      field: "follow_up_status",
+      minWidth: 200,
+      flex: 1,
+      cellRenderer: (params) => (
+        <FollowUpStatusTag
+          value={params.value}
+          leadId={params.data._id}
+          leadStatus={params.data.status}
+          onUpdateFollowUpStatus={onFollowUpStatusUpdate}
         />
       ),
     },
@@ -142,103 +103,111 @@ function LeadsListTable({ leadsList, setSelectedLeads,onRowClick }) {
       field: "follow_up_date",
       flex: 2,
       minWidth: 200,
-      floatingFilter: true,
-      filter: "agDateColumnFilter",
-      filterParams: filterParams,
+      cellRenderer: (params) => formatDate(params.value),
     },
     { field: "project_name", flex: 1, filter: true, minWidth: 150 },
     { field: "budget", flex: 1, filter: true, minWidth: 100 },
-    {
-      field: "follow_up_status",
-      minWidth: 200,
-      flex: 1,
-      cellRenderer: (params) => (
-        <FollowUpStatusTag value={params.value} leadId={params.data.id} />
-      ),
-    },
     { field: "requirement", flex: 1, filter: true, minWidth: 150 },
     { field: "phone_number", flex: 1, editable: true, minWidth: 150 },
     { field: "configuration", flex: 1, filter: true, minWidth: 150 },
     { field: "city", flex: 1, filter: true, minWidth: 150 },
-    { field: "possession", flex: 1, filter: true, minWidth: 150 },
+    { field: "possession_type", flex: 1, filter: true, minWidth: 150 },
     { field: "lead_source", minWidth: 150, flex: 1 },
-  ]);
+    {
+      field: "designer_name",
+      headerName: "Designer Name",
+      valueGetter: (params) => params.data.designer?.name,
+      flex: 1,
+      minWidth: 150,
+    },
+    {
+      field: "comments",
+      headerName: "Comments",
+      valueGetter: (params) =>
+        params.data.comments && params.data.comments.length > 0
+          ? params.data.comments.map((comment) => comment.text || "").join(", ")
+          : "No comments",
+      flex: 1,
+      minWidth: 200,
+    },
+  ];
+
+  const getRowStyle = useMemo(
+    () => (params) => {
+      if (params.node.rowIndex % 2 === 0) {
+        return { background: "white" };
+      }
+      return null;
+    },
+    []
+  );
+
+  useEffect(() => {
+    // Toggle modal visibility based on selected rows
+    setIsModalVisible(selectedRows.length > 0);
+  }, [selectedRows]);
+
+  const onSelectionChanged = (params) => {
+    const selectedNodes = params.api.getSelectedNodes();
+    const selectedData = selectedNodes.map((node) => node.data);
+    setSelectedRows(selectedData);
+
+  };
+
+  const handleRowClick = (params) => {
+  setSelectedLead(params.data); // Set selected lead based on clicked row
+  setIsModalVisible(true); // Open the modal
+};
 
   const defaultColDef = useMemo(
     () => ({
-      sortable: true,
       filter: true,
       resizable: true,
     }),
     []
   );
 
-  const onSearchChange = (e) => {
-    setsearchInput(e.target.value);
-  };
-
-  // const onSelectionChanged = () => {
-  //   const selectedRows = gridRef.current.api.getSelectedRows();
-  //   setSelectedLeads(selectedRows);
-  // };
-
-  const gridRef = React.createRef();
-
   return (
-    <div>
-      <div className="search-container">
-        <Search className="search-icon" />
-        <input
-          type="text"
-          placeholder="Search..."
-          value={searchInput}
-          onChange={onSearchChange}
-        />
-      </div>
+    <div className="my-7">
       <div className="ag-theme-quartz" style={{ height: 600, width: "100%" }}>
+        <div className="p-2 rounded-lg border shadow-sm flex gap-2 mb-4 max-w-sm">
+          <Search />
+          <input
+            className="outline-none w-full"
+            type="text"
+            placeholder="Search..."
+            onChange={(event) => setsearchInput(event.target.value)}
+          />
+        </div>
         <AgGridReact
-          ref={gridRef}
-          rowData={rowData}
-          columnDefs={colDefs}
+          columnDefs={columnDefs}
           defaultColDef={defaultColDef}
+          rowData={rowData}
           pagination={pagination}
           paginationPageSize={paginationPageSize}
           paginationPageSizeSelector={paginationPageSizeSelector}
-          
-          rowSelection="single"
-          onRowClicked={handleRowClick} // Handle row click
+          quickFilterText={searchInput}
+          rowSelection="multiple"
           rowStyle={rowStyle}
           getRowStyle={getRowStyle}
+          onSelectionChanged={onSelectionChanged}
+          onRowClicked={handleRowClick}
         />
       </div>
-
-      {/* Modal for displaying lead details */}
-      {selectedLead && (
-        <Modal
-          isOpen={isModalOpen}
-          onRequestClose={closeModal}
-          contentLabel="Lead Details"
-          className="modal"
-          overlayClassName="overlay"
-        >
-          <h2>Lead Details</h2>
-          <p><strong>Name:</strong> {selectedLead.name}</p>
-          <p><strong>Status:</strong> {selectedLead.status}</p>
-          <p><strong>Follow-up Date:</strong> {selectedLead.follow_up_date}</p>
-          <p><strong>Project Name:</strong> {selectedLead.project_name}</p>
-          <p><strong>Budget:</strong> {selectedLead.budget}</p>
-          <p><strong>Follow-up Status:</strong> {selectedLead.follow_up_status}</p>
-          <p><strong>Requirement:</strong> {selectedLead.requirement}</p>
-          <p><strong>Phone Number:</strong> {selectedLead.phone_number}</p>
-          <p><strong>Configuration:</strong> {selectedLead.configuration}</p>
-          <p><strong>City:</strong> {selectedLead.city}</p>
-          <p><strong>Possession:</strong> {selectedLead.possession}</p>
-          <p><strong>Lead Source:</strong> {selectedLead.lead_source}</p>
-          <button onClick={closeModal}>Close</button>
-        </Modal>
-      )}
+      {/* <EditModal
+        isVisible={isModalVisible}
+        onClose={() => setIsModalVisible(false)}
+        selectedRows={selectedRows}
+      /> */}
+      <LeadDetailsModal
+        isOpen={isModalVisible}
+        onClose={() => setIsModalVisible(false)}
+        lead={selectedLead}
+        onLeadUpdate={handleLeadUpdate}
+        
+      />
     </div>
   );
-}
+};
 
 export default LeadsListTable;
